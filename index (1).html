@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<!--
+  ════════════════════════════════════════════════════════════════
+  CARROSSEL EDITOR – DRC ADVOGADOS  |  by Bescheiben Digital
+  ════════════════════════════════════════════════════════════════
+  COMO USAR:
+    1. Abra este arquivo em qualquer navegador moderno.
+    2. Clique em um slide na sidebar esquerda para selecioná-lo.
+    3. Edite textos e cores no painel direito — preview em tempo real.
+    4. "Baixar PNG" exporta o slide atual em 1080×1350 px.
+    5. "Exportar Todos" baixa os 6 slides sequencialmente.
+
+  DEPLOY:
+    • GitHub Pages → push na branch main, ative Pages em /root
+    • Vercel        → importe o repositório, zero configuração
+
+  DEPENDÊNCIAS CDN:
+    • Tailwind CSS    — UI da ferramenta
+    • Google Fonts    — Playfair Display + Montserrat (slides)
+    • html2canvas 1.4.1 — exportação PNG
+  ════════════════════════════════════════════════════════════════
+-->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carrossel Editor – DRC | Bescheiben</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,700&family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    :root {
+      --grafite:   #282827;
+      --offwhite:  #F5F2EC;
+      --beige:     #EDE8DC;
+      --brown:     #47342A;
+      --gold:      #C5A55A;
+      --serif:     'Playfair Display', Georgia, serif;
+      --sans:      'Montserrat', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--sans);
+      background: #0f0f0e;
+      color: #e2ddd5;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ─── Scrollbars ─── */
+    ::-webkit-scrollbar { width: 3px; height: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #2e2e2b; border-radius: 2px; }
+
+    /* ─── Editor inputs ─── */
+    .e-input {
+      width: 100%;
+      background: #181816;
+      border: 1px solid #282826;
+      color: #e2ddd5;
+      border-radius: 3px;
+      padding: 7px 10px;
+      font-family: var(--sans);
+      font-size: 11.5px;
+      line-height: 1.5;
+      transition: border-color .18s;
+      resize: vertical;
+    }
+    .e-input:focus { outline: none; border-color: var(--gold); }
+
+    /* ─── Buttons ─── */
+    .btn-primary {
+      width: 100%;
+      background: var(--gold);
+      color: #111110;
+      font-family: var(--sans);
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 3px;
+      padding: 11px 0;
+      cursor: pointer;
+      transition: opacity .18s;
+    }
+    .btn-primary:hover { opacity: .82; }
+    .btn-secondary {
+      width: 100%;
+      background: transparent;
+      color: #7a7570;
+      font-family: var(--sans);
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      border: 1px solid #252523;
+      border-radius: 3px;
+      padding: 10px 0;
+      cursor: pointer;
+      transition: all .18s;
+    }
+    .btn-secondary:hover { border-color: #4a4a47; color: #c0bbb3; }
+
+    /* ─── Sidebar items ─── */
+    .slide-thumb-item {
+      cursor: pointer;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      transition: border-color .18s;
+      position: relative;
+    }
+    .slide-thumb-item:hover { border-color: #302f2d; }
+    .slide-thumb-item.active { border-color: var(--gold); }
+    .slide-thumb-item.active .thumb-label { color: var(--gold); }
+
+    .thumb-label {
+      font-size: 8.5px;
+      font-weight: 700;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: #3e3e3b;
+      padding: 5px 4px 3px;
+      transition: color .18s;
+    }
+
+    /* ─── Color swatch ─── */
+    .c-swatch {
+      width: 22px; height: 22px;
+      border-radius: 3px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color .15s, transform .15s;
+      flex-shrink: 0;
+    }
+    .c-swatch:hover { transform: scale(1.12); }
+    .c-swatch.active { border-color: var(--gold); }
+
+    /* ─── Section header ─── */
+    .section-hdr {
+      font-size: 8.5px;
+      font-weight: 800;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: #3e3e3b;
+      padding: 14px 16px 8px;
+      border-top: 1px solid #181816;
+    }
+    .section-hdr:first-child { border-top: none; }
+
+    /* ─── Toast ─── */
+    #toast {
+      position: fixed;
+      bottom: 22px; right: 22px;
+      background: var(--gold);
+      color: #0f0f0e;
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .07em;
+      padding: 10px 18px;
+      border-radius: 3px;
+      z-index: 9999;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity .25s, transform .25s;
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ─── Loading overlay ─── */
+    #loader {
+      position: fixed; inset: 0;
+      background: rgba(15,15,14,.88);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9998;
+      backdrop-filter: blur(4px);
+    }
+    #loader.show { display: flex; }
+
+    /* ─── Preview area bg ─── */
+    #preview-area {
+      background:
+        radial-gradient(ellipse at 50% 50%, #17171500 0%, #0f0f0e 80%),
+        repeating-linear-gradient(0deg,   transparent, transparent 39px, #1e1e1c 39px, #1e1e1c 40px),
+        repeating-linear-gradient(90deg,  transparent, transparent 39px, #1e1e1c 39px, #1e1e1c 40px);
+      background-color: #0f0f0e;
+    }
+
+    /* ─── Slide canvas (used in preview & export) ─── */
+    .slide-canvas {
+      width: 1080px;
+      height: 1350px;
+      position: relative;
+      overflow: hidden;
+      font-family: var(--sans);
+    }
+
+    /* ─── Header gradient border ─── */
+    #app-header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #2a2826 20%, #2a2826 80%, transparent);
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ═══════════════════════════════════════════
+     HEADER
+═══════════════════════════════════════════ -->
+<header id="app-header" class="relative flex items-center justify-between px-5 bg-[#0c0c0b]" style="height:50px;">
+  <!-- Brand -->
+  <div class="flex items-center gap-3">
+    <span style="font-family:var(--sans);font-size:11px;font-weight:800;letter-spacing:.24em;color:var(--gold);">BESCHEIBEN</span>
+    <span style="width:1px;height:18px;background:#222220;display:block;"></span>
+    <span style="font-size:10px;font-weight:500;letter-spacing:.16em;color:#3e3e3b;">CARROSSEL EDITOR</span>
+    <span style="font-size:10px;color:#282826;">·</span>
+    <span style="font-size:10px;font-weight:600;letter-spacing:.12em;color:#6a6560;">DRC ADVOGADOS</span>
+  </div>
+
+  <!-- Actions -->
+  <div class="flex items-center gap-2">
+    <button onclick="selectSlide(selectedSlide||1)" id="btn-preview-size"
+      class="px-3 py-1.5 text-[9.5px] font-bold tracking-widest uppercase text-[#5a5a57] border border-[#222220] rounded hover:text-[#9a9591] hover:border-[#3a3a37] transition-all">
+      ⊞ FIT
+    </button>
+    <button onclick="exportAll()"
+      class="flex items-center gap-1.5 px-4 py-2 rounded text-[10px] font-bold tracking-widest uppercase transition-opacity hover:opacity-80"
+      style="background:var(--gold);color:#0f0f0e;">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Exportar Todos
+    </button>
+  </div>
+</header>
+
+
+<!-- ═══════════════════════════════════════════
+     LAYOUT
+═══════════════════════════════════════════ -->
+<div class="flex" style="height:calc(100vh - 50px);">
+
+  <!-- ── SIDEBAR LEFT ── -->
+  <aside id="sidebar"
+    class="flex flex-col overflow-y-auto border-r border-[#181816] bg-[#0c0c0b]"
+    style="width:160px;min-width:160px;">
+    <div class="section-hdr" style="border-top:none;">Slides</div>
+    <!-- thumbnails injected by JS -->
+  </aside>
+
+
+  <!-- ── MAIN PREVIEW ── -->
+  <main id="preview-area" class="flex-1 flex items-center justify-center overflow-hidden relative">
+    <!-- Empty state -->
+    <div id="empty-state" class="text-center select-none">
+      <div style="font-size:42px;opacity:.12;margin-bottom:12px;">▣</div>
+      <p style="font-size:11px;color:#2e2e2b;letter-spacing:.14em;font-weight:600;">SELECIONE UM SLIDE</p>
+    </div>
+
+    <!-- Slide preview (scaled) -->
+    <div id="preview-outer" class="hidden" style="position:relative;">
+      <div id="preview-scaler" style="transform-origin:top center; position:absolute; top:0; left:0;">
+        <div id="preview-canvas"></div>
+      </div>
+    </div>
+
+    <!-- Slide counter badge -->
+    <div id="slide-badge"
+      class="hidden absolute bottom-4 left-1/2 -translate-x-1/2"
+      style="font-size:9px;font-weight:700;letter-spacing:.18em;color:#3a3a37;text-transform:uppercase;">
+    </div>
+  </main>
+
+
+  <!-- ── PANEL RIGHT ── -->
+  <aside id="edit-panel"
+    class="hidden overflow-y-auto border-l border-[#181816] bg-[#0c0c0b]"
+    style="width:256px;min-width:256px;">
+    <!-- populated by JS -->
+  </aside>
+
+</div><!-- /layout -->
+
+
+<!-- ═══════════════════════════════════════════
+     HIDDEN EXPORT CONTAINER
+═══════════════════════════════════════════ -->
+<div id="export-box" style="position:fixed;top:-99999px;left:-99999px;width:1080px;pointer-events:none;"></div>
+
+
+<!-- ═══════════════════════════════════════════
+     TOAST + LOADER
+═══════════════════════════════════════════ -->
+<div id="toast"></div>
+
+<div id="loader" class="loader">
+  <div style="text-align:center;">
+    <div style="font-size:11px;font-weight:800;letter-spacing:.22em;color:var(--gold);margin-bottom:8px;">EXPORTANDO…</div>
+    <div style="font-size:10px;color:#3a3a37;letter-spacing:.1em;" id="loader-msg">Processando slide 1 de 6</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ─────────────────────────────────────────
+   CONSTANTS & DEFAULTS
+───────────────────────────────────────── */
+const DEFAULT_ACCENT = '#C5A55A';
+
+const SLIDE_DEFS = [
+  {
+    id: 1,
+    pageLabel: '01 · Capa',
+    defaultBg: '#282827',
+    fields: {
+      eyebrow:   'DRC ADVOGADOS',
+      heading1:  'Seu Negócio',
+      heading2:  'Protegido.',
+      heading3:  'Sua Empresa',
+      heading4:  'Segura.',
+      subtitle:  'Assessoria jurídica estratégica para empresas que querem crescer sem riscos.',
+      tag:       'Direito Empresarial'
+    }
+  },
+  {
+    id: 2,
+    pageLabel: '02 · Problema',
+    defaultBg: '#F5F2EC',
+    fields: {
+      eyebrow:  'O PROBLEMA',
+      headline: 'Sem amparo jurídico, seu negócio está exposto a riscos.',
+      pain1:    'Contratos mal redigidos que geram disputas caras e demoradas',
+      pain2:    'Sócios sem acordo societário claro — conflitos que travam tudo',
+      pain3:    'Multas e autuações por irregularidades fiscais e trabalhistas',
+      footnote: '9 em cada 10 processos trabalhistas poderiam ser evitados com assessoria jurídica preventiva adequada.'
+    }
+  },
+  {
+    id: 3,
+    pageLabel: '03 · Solução',
+    defaultBg: '#EDE8DC',
+    fields: {
+      eyebrow:     'A SOLUÇÃO',
+      headline:    '3 Passos Para Blindar Seu Negócio',
+      s1_num:      '01',
+      s1_title:    'Diagnóstico Jurídico',
+      s1_desc:     'Mapeamos todas as vulnerabilidades legais da sua empresa em uma análise completa e detalhada.',
+      s2_num:      '02',
+      s2_title:    'Estratégia Preventiva',
+      s2_desc:     'Desenvolvemos um plano personalizado para eliminar riscos antes que se tornem problemas reais.',
+      s3_num:      '03',
+      s3_title:    'Monitoramento Contínuo',
+      s3_desc:     'Acompanhamento jurídico permanente para que você foque no crescimento do seu negócio com segurança.'
+    }
+  },
+  {
+    id: 4,
+    pageLabel: '04 · Valor',
+    defaultBg: '#282827',
+    fields: {
+      eyebrow:   'POR QUE A DRC?',
+      heading1:  'Segurança',
+      heading2:  'Jurídica que',
+      heading3:  'Gera Valor.',
+      benefit1:  'Contratos revisados e juridicamente blindados',
+      benefit2:  'Acordos societários sólidos e estratégicos',
+      benefit3:  'Compliance trabalhista e fiscal completo',
+      benefit4:  'Consultoria estratégica e suporte contínuo',
+      footer:    'Mais de 200 empresas protegidas'
+    }
+  },
+  {
+    id: 5,
+    pageLabel: '05 · Case',
+    defaultBg: '#F5F2EC',
+    fields: {
+      badge:       'CASO REAL',
+      stat:        'R$ 480 mil',
+      stat_label:  'em litígio evitado',
+      headline:    'Como revisamos um contrato e salvamos o negócio.',
+      story:       'Uma empresa do setor de logística nos acionou antes de assinar um contrato com fornecedor estrangeiro. Identificamos uma cláusula de exclusividade abusiva que travaria as operações por 5 anos. A negociação preventiva poupou tempo, capital e evitou um litígio milionário.',
+      attribution: '— Cliente do setor de Logística  ·  São Paulo, SP'
+    }
+  },
+  {
+    id: 6,
+    pageLabel: '06 · CTA',
+    defaultBg: '#47342A',
+    fields: {
+      eyebrow:   'PRÓXIMO PASSO',
+      heading1:  'Agende Sua',
+      heading2:  'Consultoria',
+      heading3:  'Gratuita.',
+      cta_desc:  'Fale com um especialista e descubra como proteger seu negócio com a assessoria jurídica certa.',
+      cta_btn:   'AGENDAR AGORA',
+      contact:   '@drcadvogados',
+      tag:       'Sem compromisso  ·  100% gratuito'
+    }
+  }
+];
+
+/* Mutable state — deep-copy from defaults */
+let state = SLIDE_DEFS.map(d => ({
+  id:     d.id,
+  label:  d.pageLabel,
+  defBg:  d.defaultBg,
+  bg:     d.defaultBg,
+  accent: DEFAULT_ACCENT,
+  fields: { ...d.fields }
+}));
+
+let selectedSlide = null;
+
+
+/* ─────────────────────────────────────────
+   HELPERS
+───────────────────────────────────────── */
+function esc(v) {
+  return String(v||'')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+function isDark(hex) {
+  hex = hex.replace('#','');
+  if (hex.length === 3) hex = hex.split('').map(c=>c+c).join('');
+  const r = parseInt(hex.slice(0,2),16);
+  const g = parseInt(hex.slice(2,4),16);
+  const b = parseInt(hex.slice(4,6),16);
+  return (r*299+g*587+b*114)/1000 < 145;
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+function setLoader(show, msg='') {
+  const el = document.getElementById('loader');
+  el.classList.toggle('show', show);
+  if (msg) document.getElementById('loader-msg').textContent = msg;
+}
+
+/* delay helper for sequential export */
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+
+/* ─────────────────────────────────────────
+   SLIDE RENDERERS
+   Each returns an HTML string for 1080×1350
+───────────────────────────────────────── */
+
+function renderSlide(id) {
+  const s   = state[id - 1];
+  const f   = s.fields;
+  const bg  = s.bg;
+  const ac  = s.accent;
+  const dk  = isDark(bg);
+  const tc  = dk ? '#F0EDE6' : '#282827';     /* text colour */
+  const tm  = dk ? 'rgba(240,237,230,.38)' : 'rgba(40,40,39,.32)'; /* muted */
+  const sep = dk ? 'rgba(240,237,230,.11)' : 'rgba(40,40,39,.11)'; /* separator */
+
+  switch(id) {
+    case 1: return slide1(f,bg,ac,tc,tm,sep,s.label);
+    case 2: return slide2(f,bg,ac,tc,tm,sep,s.label);
+    case 3: return slide3(f,bg,ac,tc,tm,sep,s.label);
+    case 4: return slide4(f,bg,ac,tc,tm,sep,s.label);
+    case 5: return slide5(f,bg,ac,tc,tm,sep,s.label);
+    case 6: return slide6(f,bg,ac,tc,tm,sep,s.label);
+    default: return '';
+  }
+}
+
+/* shared wrappers */
+const FNT = `font-family:'Montserrat',sans-serif;`;
+const SER = `font-family:'Playfair Display',Georgia,serif;`;
+
+function baseWrap(bg, inner) {
+  return `<div class="slide-canvas" style="background:${bg};${FNT}display:flex;flex-direction:column;padding:76px 90px;box-sizing:border-box;">${inner}</div>`;
+}
+function pageLbl(label, tm) {
+  return `<div style="position:absolute;bottom:38px;left:90px;${FNT}font-size:9px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:${tm};">${esc(label)}</div>`;
+}
+function hrule(sep, my='48px') {
+  return `<div style="width:100%;height:.5px;background:${sep};margin:${my} 0;flex-shrink:0;"></div>`;
+}
+function bracket(pos, ac, sz='58px', op='.28') {
+  const p = { tl:'top:52px;left:90px;border-top:1px solid ACCENT;border-left:1px solid ACCENT;', tr:'top:52px;right:90px;border-top:1px solid ACCENT;border-right:1px solid ACCENT;', bl:'bottom:52px;left:90px;border-bottom:1px solid ACCENT;border-left:1px solid ACCENT;', br:'bottom:52px;right:90px;border-bottom:1px solid ACCENT;border-right:1px solid ACCENT;' };
+  return `<div style="position:absolute;width:${sz};height:${sz};${p[pos].replace(/ACCENT/g,ac)}opacity:${op};"></div>`;
+}
+function eyebrow(txt, ac) {
+  return `<div style="${FNT}font-size:10.5px;font-weight:800;letter-spacing:.26em;text-transform:uppercase;color:${ac};margin-bottom:48px;">${esc(txt)}</div>`;
+}
+
+
+/* ── SLIDE 1 ── Capa ── */
+function slide1(f,bg,ac,tc,tm,sep,label) {
+  return baseWrap(bg, `
+    ${bracket('tr',ac,'56px','.35')}
+    ${eyebrow(f.eyebrow,ac)}
+
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <div style="${SER}font-size:104px;font-weight:700;line-height:.98;letter-spacing:-.025em;">
+        <div style="color:${tc};">${esc(f.heading1)}</div>
+        <div style="color:${ac};">${esc(f.heading2)}</div>
+        <div style="color:${tc};">${esc(f.heading3)}</div>
+        <div style="color:${ac};">${esc(f.heading4)}</div>
+      </div>
+    </div>
+
+    ${hrule(sep,'40px')}
+
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:32px;">
+      <div style="${FNT}font-size:16.5px;font-weight:300;line-height:1.72;color:${tc};opacity:.72;max-width:520px;">${esc(f.subtitle)}</div>
+      <div style="${FNT}font-size:9.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:${ac};border:1px solid ${ac};padding:8px 15px;opacity:.75;white-space:nowrap;flex-shrink:0;">${esc(f.tag)}</div>
+    </div>
+
+    ${pageLbl(label,tm)}
+    ${bracket('bl',ac,'40px','.18')}
+  `);
+}
+
+
+/* ── SLIDE 2 ── Problema ── */
+function slide2(f,bg,ac,tc,tm,sep,label) {
+  const pains = [f.pain1, f.pain2, f.pain3];
+  return baseWrap(bg, `
+    ${eyebrow(f.eyebrow,ac)}
+
+    <div style="${SER}font-size:78px;font-weight:700;line-height:1.06;letter-spacing:-.022em;color:${tc};margin-bottom:64px;">${esc(f.headline)}</div>
+
+    ${hrule(sep,'0')}
+
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:0;">
+      ${pains.map((p,i)=>`
+        <div style="display:flex;align-items:flex-start;gap:22px;padding:${i===0?'40px 0 36px':'36px 0'};${i>0?'border-top:.5px solid '+sep+';':''}" >
+          <div style="${SER}font-size:44px;font-weight:700;font-style:italic;color:${ac};opacity:.55;line-height:1;min-width:52px;">${String(i+1).padStart(2,'0')}</div>
+          <div style="${FNT}font-size:17px;font-weight:400;line-height:1.68;color:${tc};opacity:.84;padding-top:4px;">${esc(p)}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div style="${FNT}font-size:12.5px;font-weight:400;font-style:italic;line-height:1.75;color:${tc};opacity:.38;margin-top:auto;padding-top:20px;border-top:.5px solid ${sep};padding-top:24px;">"${esc(f.footnote)}"</div>
+
+    ${pageLbl(label,tm)}
+  `);
+}
+
+
+/* ── SLIDE 3 ── Solução ── */
+function slide3(f,bg,ac,tc,tm,sep,label) {
+  const steps = [
+    [f.s1_num, f.s1_title, f.s1_desc],
+    [f.s2_num, f.s2_title, f.s2_desc],
+    [f.s3_num, f.s3_title, f.s3_desc],
+  ];
+  return baseWrap(bg, `
+    ${eyebrow(f.eyebrow,ac)}
+
+    <div style="${SER}font-size:80px;font-weight:700;line-height:1.04;letter-spacing:-.02em;color:${tc};margin-bottom:56px;">${esc(f.headline)}</div>
+
+    ${hrule(sep,'0')}
+
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      ${steps.map((st,i)=>`
+        <div style="display:flex;gap:32px;align-items:flex-start;padding:${i===0?'40px 0 40px':'40px 0'};${i>0?'border-top:.5px solid '+sep+';':''}">
+          <div style="${SER}font-size:56px;font-weight:700;font-style:italic;color:${ac};line-height:.95;opacity:.65;min-width:62px;">${esc(st[0])}</div>
+          <div style="flex:1;">
+            <div style="${FNT}font-size:19px;font-weight:700;letter-spacing:.025em;color:${tc};margin-bottom:10px;">${esc(st[1])}</div>
+            <div style="${FNT}font-size:15.5px;font-weight:300;line-height:1.72;color:${tc};opacity:.62;">${esc(st[2])}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    ${pageLbl(label,tm)}
+    ${bracket('br',ac,'52px','.18')}
+  `);
+}
+
+
+/* ── SLIDE 4 ── Valor ── */
+function slide4(f,bg,ac,tc,tm,sep,label) {
+  const benefits = [f.benefit1,f.benefit2,f.benefit3,f.benefit4];
+  return baseWrap(bg, `
+    <div style="position:absolute;top:0;left:0;right:0;height:2.5px;background:${ac};opacity:.65;"></div>
+
+    ${eyebrow(f.eyebrow,ac)}
+
+    <div style="${SER}font-size:96px;font-weight:700;line-height:.98;letter-spacing:-.024em;margin-bottom:64px;">
+      <div style="color:${tc};">${esc(f.heading1)}</div>
+      <div style="color:${tc};">${esc(f.heading2)}</div>
+      <div style="color:${ac};">${esc(f.heading3)}</div>
+    </div>
+
+    ${hrule(sep,'0')}
+
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:28px;padding:40px 0;">
+      ${benefits.map(b=>`
+        <div style="display:flex;align-items:center;gap:20px;">
+          <div style="width:5px;height:5px;border-radius:50%;background:${ac};flex-shrink:0;"></div>
+          <div style="${FNT}font-size:18.5px;font-weight:500;color:${tc};line-height:1.55;">${esc(b)}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div style="border-top:.5px solid ${sep};padding-top:28px;display:flex;align-items:center;gap:14px;">
+      <div style="width:28px;height:1px;background:${ac};"></div>
+      <div style="${FNT}font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:${ac};">${esc(f.footer)}</div>
+    </div>
+
+    ${pageLbl(label,tm)}
+  `);
+}
+
+
+/* ── SLIDE 5 ── Case ── */
+function slide5(f,bg,ac,tc,tm,sep,label) {
+  return baseWrap(bg, `
+    <div style="${FNT}display:inline-block;align-self:flex-start;font-size:9px;font-weight:800;letter-spacing:.26em;text-transform:uppercase;background:${ac};color:${isDark(ac)?'#0f0f0e':'#f0ede6'};padding:7px 14px;margin-bottom:52px;">${esc(f.badge)}</div>
+
+    <div>
+      <div style="${SER}font-size:100px;font-weight:700;line-height:.96;letter-spacing:-.03em;color:${ac};">${esc(f.stat)}</div>
+      <div style="${FNT}font-size:12.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:${tc};opacity:.45;margin-top:8px;">${esc(f.stat_label)}</div>
+    </div>
+
+    ${hrule(sep,'36px')}
+
+    <div style="${SER}font-size:45px;font-weight:700;line-height:1.16;letter-spacing:-.01em;color:${tc};margin-bottom:36px;">${esc(f.headline)}</div>
+
+    <div style="${FNT}font-size:16.5px;font-weight:300;line-height:1.82;color:${tc};opacity:.68;flex:1;">${esc(f.story)}</div>
+
+    <div style="border-top:.5px solid ${sep};padding-top:24px;margin-top:auto;">
+      <div style="${FNT}font-size:11px;font-weight:600;letter-spacing:.1em;color:${tc};opacity:.35;">${esc(f.attribution)}</div>
+    </div>
+
+    ${pageLbl(label,tm)}
+  `);
+}
+
+
+/* ── SLIDE 6 ── CTA ── */
+function slide6(f,bg,ac,tc,tm,sep,label) {
+  return baseWrap(bg, `
+    ${bracket('tl',ac,'56px','.35')}
+
+    ${eyebrow(f.eyebrow,ac)}
+
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <div style="${SER}font-size:104px;font-weight:700;line-height:.97;letter-spacing:-.025em;">
+        <div style="color:${tc};">${esc(f.heading1)}</div>
+        <div style="color:${tc};">${esc(f.heading2)}</div>
+        <div style="color:${ac};">${esc(f.heading3)}</div>
+      </div>
+    </div>
+
+    ${hrule(sep,'40px')}
+
+    <div style="${FNT}font-size:17px;font-weight:300;line-height:1.74;color:${tc};opacity:.72;max-width:640px;margin-bottom:40px;">${esc(f.cta_desc)}</div>
+
+    <div style="${FNT}display:inline-block;align-self:flex-start;background:${ac};color:${isDark(ac)?'#0f0f0e':'#1a1a18'};font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;padding:19px 48px;margin-bottom:32px;">${esc(f.cta_btn)}</div>
+
+    <div style="${FNT}font-size:14.5px;font-weight:500;color:${tc};opacity:.45;letter-spacing:.06em;">${esc(f.contact)}</div>
+
+    <div style="margin-top:auto;border-top:.5px solid ${sep};padding-top:22px;">
+      <div style="${FNT}font-size:9px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:${ac};opacity:.45;">${esc(f.tag)}</div>
+    </div>
+
+    ${pageLbl(label,tm)}
+    ${bracket('br',ac,'40px','.22')}
+  `);
+}
+
+
+/* ─────────────────────────────────────────
+   SIDEBAR THUMBNAILS
+───────────────────────────────────────── */
+function initSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const THUMB_W = 136;
+  const THUMB_H = Math.round(THUMB_W * 1350/1080); /* 170 */
+  const SCALE   = THUMB_W / 1080;
+
+  SLIDE_DEFS.forEach(def => {
+    const item = document.createElement('div');
+    item.className = 'slide-thumb-item p-1.5';
+    item.id = `thumb-item-${def.id}`;
+    item.onclick = () => selectSlide(def.id);
+
+    const wrap = document.createElement('div');
+    wrap.style.cssText = `width:${THUMB_W}px;height:${THUMB_H}px;overflow:hidden;position:relative;border-radius:2px;`;
+
+    const scaler = document.createElement('div');
+    scaler.id = `thumb-scaler-${def.id}`;
+    scaler.style.cssText = `transform:scale(${SCALE});transform-origin:top left;width:1080px;height:1350px;position:absolute;top:0;left:0;pointer-events:none;`;
+    scaler.innerHTML = renderSlide(def.id);
+
+    wrap.appendChild(scaler);
+
+    const lbl = document.createElement('div');
+    lbl.className = 'thumb-label';
+    lbl.textContent = def.pageLabel;
+
+    item.appendChild(wrap);
+    item.appendChild(lbl);
+    sidebar.appendChild(item);
+  });
+}
+
+function refreshThumbnail(id) {
+  const scaler = document.getElementById(`thumb-scaler-${id}`);
+  if (scaler) scaler.innerHTML = renderSlide(id);
+}
+
+
+/* ─────────────────────────────────────────
+   PREVIEW
+───────────────────────────────────────── */
+function computeScale() {
+  const area = document.getElementById('preview-area');
+  const W = area.clientWidth  - 72;
+  const H = area.clientHeight - 72;
+  return Math.min(W/1080, H/1350, .72);
+}
+
+function updatePreview() {
+  if (!selectedSlide) return;
+  document.getElementById('preview-canvas').innerHTML = renderSlide(selectedSlide);
+}
+
+function applyScale() {
+  if (!selectedSlide) return;
+  const sc  = computeScale();
+  const scaler = document.getElementById('preview-scaler');
+  const outer  = document.getElementById('preview-outer');
+  scaler.style.transform = `scale(${sc})`;
+
+  const W = Math.round(1080 * sc);
+  const H = Math.round(1350 * sc);
+  outer.style.width  = W + 'px';
+  outer.style.height = H + 'px';
+  scaler.style.position = 'relative';
+  scaler.style.left = '0';
+  scaler.style.top  = '0';
+  scaler.style.transformOrigin = 'top left';
+}
+
+function selectSlide(id) {
+  selectedSlide = id;
+
+  /* sidebar highlight */
+  document.querySelectorAll('.slide-thumb-item').forEach(el=>el.classList.remove('active'));
+  document.getElementById(`thumb-item-${id}`)?.classList.add('active');
+
+  /* show preview */
+  document.getElementById('empty-state').classList.add('hidden');
+  const outer = document.getElementById('preview-outer');
+  outer.classList.remove('hidden');
+  outer.style.display = 'block';
+  updatePreview();
+  setTimeout(applyScale, 20);
+
+  /* badge */
+  const badge = document.getElementById('slide-badge');
+  badge.classList.remove('hidden');
+  badge.textContent = state[id-1].label;
+
+  /* show + populate editor */
+  const panel = document.getElementById('edit-panel');
+  panel.style.display = 'block';
+  panel.classList.remove('hidden');
+  buildEditor(id);
+}
+
+
+/* ─────────────────────────────────────────
+   EDITOR PANEL
+───────────────────────────────────────── */
+const FIELD_CONFIGS = {
+  1: [
+    { key:'eyebrow',  label:'Eyebrow',          type:'text'     },
+    { key:'heading1', label:'Headline · Linha 1', type:'text'    },
+    { key:'heading2', label:'Headline · Linha 2 (dourado)', type:'text' },
+    { key:'heading3', label:'Headline · Linha 3', type:'text'    },
+    { key:'heading4', label:'Headline · Linha 4 (dourado)', type:'text' },
+    { key:'subtitle', label:'Subtítulo',          type:'textarea'},
+    { key:'tag',      label:'Tag / Badge',        type:'text'    },
+  ],
+  2: [
+    { key:'eyebrow',  label:'Label Superior',    type:'text'     },
+    { key:'headline', label:'Headline Principal',type:'textarea' },
+    { key:'pain1',    label:'Ponto 01',           type:'textarea'},
+    { key:'pain2',    label:'Ponto 02',           type:'textarea'},
+    { key:'pain3',    label:'Ponto 03',           type:'textarea'},
+    { key:'footnote', label:'Citação / Rodapé',  type:'textarea' },
+  ],
+  3: [
+    { key:'eyebrow',   label:'Label Superior',   type:'text'     },
+    { key:'headline',  label:'Headline',          type:'text'     },
+    { key:'s1_num',    label:'Passo 1 · Número',  type:'text'    },
+    { key:'s1_title',  label:'Passo 1 · Título',  type:'text'    },
+    { key:'s1_desc',   label:'Passo 1 · Desc',    type:'textarea'},
+    { key:'s2_num',    label:'Passo 2 · Número',  type:'text'    },
+    { key:'s2_title',  label:'Passo 2 · Título',  type:'text'    },
+    { key:'s2_desc',   label:'Passo 2 · Desc',    type:'textarea'},
+    { key:'s3_num',    label:'Passo 3 · Número',  type:'text'    },
+    { key:'s3_title',  label:'Passo 3 · Título',  type:'text'    },
+    { key:'s3_desc',   label:'Passo 3 · Desc',    type:'textarea'},
+  ],
+  4: [
+    { key:'eyebrow',   label:'Label Superior',   type:'text'     },
+    { key:'heading1',  label:'Headline · Linha 1', type:'text'   },
+    { key:'heading2',  label:'Headline · Linha 2', type:'text'   },
+    { key:'heading3',  label:'Headline · Linha 3 (dourado)', type:'text'},
+    { key:'benefit1',  label:'Benefício 1',       type:'text'    },
+    { key:'benefit2',  label:'Benefício 2',       type:'text'    },
+    { key:'benefit3',  label:'Benefício 3',       type:'text'    },
+    { key:'benefit4',  label:'Benefício 4',       type:'text'    },
+    { key:'footer',    label:'Rodapé / Social',   type:'text'    },
+  ],
+  5: [
+    { key:'badge',       label:'Badge',           type:'text'    },
+    { key:'stat',        label:'Número / Stat',   type:'text'    },
+    { key:'stat_label',  label:'Label do Stat',   type:'text'    },
+    { key:'headline',    label:'Headline',        type:'text'    },
+    { key:'story',       label:'Texto do Case',   type:'textarea'},
+    { key:'attribution', label:'Atribuição',      type:'text'    },
+  ],
+  6: [
+    { key:'eyebrow',  label:'Label Superior',     type:'text'    },
+    { key:'heading1', label:'Headline · Linha 1', type:'text'    },
+    { key:'heading2', label:'Headline · Linha 2', type:'text'    },
+    { key:'heading3', label:'Headline · Linha 3 (dourado)', type:'text'},
+    { key:'cta_desc', label:'Descrição CTA',      type:'textarea'},
+    { key:'cta_btn',  label:'Botão CTA',          type:'text'    },
+    { key:'contact',  label:'Contato / Arroba',   type:'text'    },
+    { key:'tag',      label:'Tag Rodapé',         type:'text'    },
+  ]
+};
+
+const BG_PRESETS     = ['#282827','#F5F2EC','#EDE8DC','#47342A','#1a1a18','#F8F4EE'];
+const ACCENT_PRESETS = ['#C5A55A','#F3E792','#D4AF6A','#B8922A','#E8D5A3','#8B6914'];
+
+function buildEditor(id) {
+  const s   = state[id - 1];
+  const fcs = FIELD_CONFIGS[id] || [];
+  const panel = document.getElementById('edit-panel');
+
+  panel.innerHTML = `
+    <!-- Header -->
+    <div style="padding:14px 16px 10px;border-bottom:1px solid #181816;">
+      <div style="font-size:8.5px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:#3e3e3b;margin-bottom:3px;">EDITANDO</div>
+      <div style="font-size:12px;font-weight:700;color:#e2ddd5;">${esc(s.label)}</div>
+    </div>
+
+    <!-- COLORS -->
+    <div class="section-hdr">Cores</div>
+    <div style="padding:4px 16px 16px;display:flex;flex-direction:column;gap:14px;">
+
+      <!-- Background -->
+      <div>
+        <div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#4a4a47;margin-bottom:7px;">Fundo</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <input type="color" id="picker-bg" value="${esc(s.bg)}"
+            style="width:32px;height:30px;border:1px solid #252523;border-radius:3px;cursor:pointer;background:none;padding:2px;flex-shrink:0;"
+            oninput="onBgPicker(${id},this.value)" />
+          <input type="text" id="text-bg" value="${esc(s.bg)}" class="e-input" style="font-size:11px;"
+            oninput="onBgText(${id},this.value)" />
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${BG_PRESETS.map(c=>`<div class="c-swatch ${s.bg===c?'active':''}" style="background:${c};" title="${c}" onclick="setBg(${id},'${c}')"></div>`).join('')}
+        </div>
+      </div>
+
+      <!-- Accent -->
+      <div>
+        <div style="font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#4a4a47;margin-bottom:7px;">Destaque</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <input type="color" id="picker-ac" value="${esc(s.accent)}"
+            style="width:32px;height:30px;border:1px solid #252523;border-radius:3px;cursor:pointer;background:none;padding:2px;flex-shrink:0;"
+            oninput="onAcPicker(${id},this.value)" />
+          <input type="text" id="text-ac" value="${esc(s.accent)}" class="e-input" style="font-size:11px;"
+            oninput="onAcText(${id},this.value)" />
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${ACCENT_PRESETS.map(c=>`<div class="c-swatch ${s.accent===c?'active':''}" style="background:${c};" title="${c}" onclick="setAccent(${id},'${c}')"></div>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- TEXTS -->
+    <div class="section-hdr">Textos</div>
+    <div style="padding:4px 16px 16px;display:flex;flex-direction:column;gap:11px;">
+      ${fcs.map(fc=>`
+        <div>
+          <label style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#4a4a47;display:block;margin-bottom:5px;">${esc(fc.label)}</label>
+          ${fc.type==='textarea'
+            ? `<textarea id="f-${fc.key}" class="e-input" rows="3" oninput="onField(${id},'${fc.key}',this.value)">${esc(s.fields[fc.key]||'')}</textarea>`
+            : `<input id="f-${fc.key}" type="text" class="e-input" value="${esc(s.fields[fc.key]||'')}" oninput="onField(${id},'${fc.key}',this.value)" />`
+          }
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="section-hdr">Ações</div>
+    <div style="padding:4px 16px 20px;display:flex;flex-direction:column;gap:7px;">
+      <button class="btn-primary" onclick="downloadSlide(${id})">↓ Baixar PNG</button>
+      <button class="btn-secondary" onclick="copyHTML(${id})">⊂ Copiar HTML do Slide</button>
+      <button class="btn-secondary" style="color:#4a4a47;" onclick="resetSlide(${id})">↺ Resetar para Original</button>
+    </div>
+  `;
+}
+
+
+/* ─────────────────────────────────────────
+   STATE MUTATIONS
+───────────────────────────────────────── */
+function onField(id, key, val) {
+  state[id-1].fields[key] = val;
+  updatePreview();
+  refreshThumbnail(id);
+}
+
+function setBg(id, color) {
+  state[id-1].bg = color;
+  syncPicker('bg', color);
+  updatePreview();
+  refreshThumbnail(id);
+  /* refresh swatch active states */
+  document.querySelectorAll('#edit-panel .c-swatch').forEach(el=>{
+    /* re-determine active by comparing with current state from title attr */
+  });
+  buildEditor(id); /* cheapest way to refresh swatch borders */
+}
+function onBgPicker(id, v) {
+  state[id-1].bg = v;
+  const t = document.getElementById('text-bg');
+  if (t) t.value = v;
+  updatePreview(); refreshThumbnail(id);
+}
+function onBgText(id, v) {
+  if (!/^#[0-9A-Fa-f]{6}$/.test(v)) return;
+  state[id-1].bg = v;
+  const p = document.getElementById('picker-bg');
+  if (p) p.value = v;
+  updatePreview(); refreshThumbnail(id);
+}
+
+function setAccent(id, color) {
+  state[id-1].accent = color;
+  updatePreview(); refreshThumbnail(id);
+  buildEditor(id);
+}
+function onAcPicker(id, v) {
+  state[id-1].accent = v;
+  const t = document.getElementById('text-ac');
+  if (t) t.value = v;
+  updatePreview(); refreshThumbnail(id);
+}
+function onAcText(id, v) {
+  if (!/^#[0-9A-Fa-f]{6}$/.test(v)) return;
+  state[id-1].accent = v;
+  const p = document.getElementById('picker-ac');
+  if (p) p.value = v;
+  updatePreview(); refreshThumbnail(id);
+}
+
+function syncPicker(type, v) {
+  const p = document.getElementById(`picker-${type}`);
+  const t = document.getElementById(`text-${type}`);
+  if (p) p.value = v;
+  if (t) t.value = v;
+}
+
+function resetSlide(id) {
+  const def = SLIDE_DEFS[id-1];
+  state[id-1] = { id, label: def.pageLabel, defBg: def.defaultBg, bg: def.defaultBg, accent: DEFAULT_ACCENT, fields: { ...def.fields } };
+  updatePreview();
+  refreshThumbnail(id);
+  buildEditor(id);
+  toast('Slide resetado para o template original.');
+}
+
+
+/* ─────────────────────────────────────────
+   EXPORT / COPY
+───────────────────────────────────────── */
+async function downloadSlide(id) {
+  setLoader(true, `Exportando slide ${id}…`);
+  try {
+    const box = document.getElementById('export-box');
+    box.innerHTML = renderSlide(id);
+    const el = box.firstElementChild;
+
+    const canvas = await html2canvas(el, {
+      width: 1080, height: 1350,
+      scale: 1,
+      useCORS: true, allowTaint: true,
+      backgroundColor: null,
+      logging: false
+    });
+
+    const link = document.createElement('a');
+    link.download = `DRC-carrossel-slide${String(id).padStart(2,'0')}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    toast(`Slide ${id} exportado com sucesso ✓`);
+  } catch(err) {
+    console.error(err);
+    toast('Erro ao exportar. Verifique o console.');
+  } finally {
+    setLoader(false);
+  }
+}
+
+async function exportAll() {
+  setLoader(true, 'Exportando slide 1 de 6…');
+  for (let id = 1; id <= 6; id++) {
+    document.getElementById('loader-msg').textContent = `Exportando slide ${id} de 6…`;
+    try {
+      const box = document.getElementById('export-box');
+      box.innerHTML = renderSlide(id);
+      const el = box.firstElementChild;
+
+      const canvas = await html2canvas(el, {
+        width: 1080, height: 1350,
+        scale: 1, useCORS: true, allowTaint: true,
+        backgroundColor: null, logging: false
+      });
+
+      const link = document.createElement('a');
+      link.download = `DRC-carrossel-slide${String(id).padStart(2,'0')}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      await wait(600);
+    } catch(err) { console.error(`Slide ${id} failed:`, err); }
+  }
+  setLoader(false);
+  toast('Todos os 6 slides exportados com sucesso ✓');
+}
+
+function copyHTML(id) {
+  const html = renderSlide(id);
+  navigator.clipboard.writeText(html)
+    .then(() => toast('HTML copiado para área de transferência ✓'))
+    .catch(() => toast('Não foi possível copiar. Tente novamente.'));
+}
+
+
+/* ─────────────────────────────────────────
+   INIT
+───────────────────────────────────────── */
+window.addEventListener('load', () => {
+  initSidebar();
+
+  /* auto-select first slide */
+  selectSlide(1);
+
+  /* responsive scale on resize */
+  window.addEventListener('resize', () => {
+    if (selectedSlide) applyScale();
+  });
+});
+</script>
+</body>
+</html>
