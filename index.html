@@ -17,7 +17,7 @@
 
   DEPENDÊNCIAS CDN:
     • Tailwind CSS    — UI da ferramenta
-    • Google Fonts    — Playfair Display + Montserrat (slides)
+    • Google Fonts    — Inter (slides + UI)
     • html2canvas 1.4.1 — exportação PNG
   ════════════════════════════════════════════════════════════════
 -->
@@ -29,7 +29,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,700&family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <style>
@@ -39,8 +39,8 @@
       --beige:     #EDE8DC;
       --brown:     #47342A;
       --gold:      #C5A55A;
-      --serif:     'Playfair Display', Georgia, serif;
-      --sans:      'Montserrat', sans-serif;
+      --serif:     'Inter', sans-serif;
+      --sans:      'Inter', sans-serif;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -492,9 +492,9 @@ function renderSlide(id) {
   }
 }
 
-/* shared wrappers */
-const FNT = `font-family:'Montserrat',sans-serif;`;
-const SER = `font-family:'Playfair Display',Georgia,serif;`;
+/* shared wrappers — both use Inter */
+const FNT = `font-family:'Inter',sans-serif;`;
+const SER = `font-family:'Inter',sans-serif;`;
 
 function baseWrap(bg, inner) {
   return `<div class="slide-canvas" style="background:${bg};${FNT}display:flex;flex-direction:column;padding:76px 90px;box-sizing:border-box;">${inner}</div>`;
@@ -510,7 +510,7 @@ function bracket(pos, ac, sz='58px', op='.28') {
   return `<div style="position:absolute;width:${sz};height:${sz};${p[pos].replace(/ACCENT/g,ac)}opacity:${op};"></div>`;
 }
 function eyebrow(txt, ac) {
-  return `<div style="${FNT}font-size:10.5px;font-weight:800;letter-spacing:.26em;text-transform:uppercase;color:${ac};margin-bottom:48px;">${esc(txt)}</div>`;
+  return `<div style="${FNT}font-size:10.5px;font-weight:700;letter-spacing:.26em;text-transform:uppercase;color:${ac};margin-bottom:48px;">${esc(txt)}</div>`;
 }
 
 
@@ -521,7 +521,7 @@ function slide1(f,bg,ac,tc,tm,sep,label) {
     ${eyebrow(f.eyebrow,ac)}
 
     <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
-      <div style="${SER}font-size:104px;font-weight:700;line-height:.98;letter-spacing:-.025em;">
+      <div style="${SER}font-size:96px;font-weight:800;line-height:1.0;letter-spacing:-.04em;">
         <div style="color:${tc};">${esc(f.heading1)}</div>
         <div style="color:${ac};">${esc(f.heading2)}</div>
         <div style="color:${tc};">${esc(f.heading3)}</div>
@@ -532,7 +532,7 @@ function slide1(f,bg,ac,tc,tm,sep,label) {
     ${hrule(sep,'40px')}
 
     <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:32px;">
-      <div style="${FNT}font-size:16.5px;font-weight:300;line-height:1.72;color:${tc};opacity:.72;max-width:520px;">${esc(f.subtitle)}</div>
+      <div style="${FNT}font-size:16px;font-weight:400;line-height:1.75;color:${tc};opacity:.72;max-width:520px;">${esc(f.subtitle)}</div>
       <div style="${FNT}font-size:9.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:${ac};border:1px solid ${ac};padding:8px 15px;opacity:.75;white-space:nowrap;flex-shrink:0;">${esc(f.tag)}</div>
     </div>
 
@@ -548,20 +548,20 @@ function slide2(f,bg,ac,tc,tm,sep,label) {
   return baseWrap(bg, `
     ${eyebrow(f.eyebrow,ac)}
 
-    <div style="${SER}font-size:78px;font-weight:700;line-height:1.06;letter-spacing:-.022em;color:${tc};margin-bottom:64px;">${esc(f.headline)}</div>
+    <div style="${SER}font-size:72px;font-weight:800;line-height:1.08;letter-spacing:-.03em;color:${tc};margin-bottom:64px;">${esc(f.headline)}</div>
 
     ${hrule(sep,'0')}
 
     <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:0;">
       ${pains.map((p,i)=>`
         <div style="display:flex;align-items:flex-start;gap:22px;padding:${i===0?'40px 0 36px':'36px 0'};${i>0?'border-top:.5px solid '+sep+';':''}" >
-          <div style="${SER}font-size:44px;font-weight:700;font-style:italic;color:${ac};opacity:.55;line-height:1;min-width:52px;">${String(i+1).padStart(2,'0')}</div>
-          <div style="${FNT}font-size:17px;font-weight:400;line-height:1.68;color:${tc};opacity:.84;padding-top:4px;">${esc(p)}</div>
+          <div style="${SER}font-size:38px;font-weight:800;color:${ac};opacity:.55;line-height:1;min-width:52px;letter-spacing:-.02em;">${String(i+1).padStart(2,'0')}</div>
+          <div style="${FNT}font-size:17px;font-weight:400;line-height:1.72;color:${tc};opacity:.84;padding-top:4px;">${esc(p)}</div>
         </div>
       `).join('')}
     </div>
 
-    <div style="${FNT}font-size:12.5px;font-weight:400;font-style:italic;line-height:1.75;color:${tc};opacity:.38;margin-top:auto;padding-top:20px;border-top:.5px solid ${sep};padding-top:24px;">"${esc(f.footnote)}"</div>
+    <div style="${FNT}font-size:12.5px;font-weight:400;line-height:1.78;color:${tc};opacity:.38;margin-top:auto;padding-top:20px;border-top:.5px solid ${sep};padding-top:24px;">"${esc(f.footnote)}"</div>
 
     ${pageLbl(label,tm)}
   `);
@@ -578,17 +578,17 @@ function slide3(f,bg,ac,tc,tm,sep,label) {
   return baseWrap(bg, `
     ${eyebrow(f.eyebrow,ac)}
 
-    <div style="${SER}font-size:80px;font-weight:700;line-height:1.04;letter-spacing:-.02em;color:${tc};margin-bottom:56px;">${esc(f.headline)}</div>
+    <div style="${SER}font-size:74px;font-weight:800;line-height:1.06;letter-spacing:-.03em;color:${tc};margin-bottom:56px;">${esc(f.headline)}</div>
 
     ${hrule(sep,'0')}
 
     <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
       ${steps.map((st,i)=>`
         <div style="display:flex;gap:32px;align-items:flex-start;padding:${i===0?'40px 0 40px':'40px 0'};${i>0?'border-top:.5px solid '+sep+';':''}">
-          <div style="${SER}font-size:56px;font-weight:700;font-style:italic;color:${ac};line-height:.95;opacity:.65;min-width:62px;">${esc(st[0])}</div>
+          <div style="${SER}font-size:48px;font-weight:800;color:${ac};line-height:.95;opacity:.65;min-width:62px;letter-spacing:-.03em;">${esc(st[0])}</div>
           <div style="flex:1;">
-            <div style="${FNT}font-size:19px;font-weight:700;letter-spacing:.025em;color:${tc};margin-bottom:10px;">${esc(st[1])}</div>
-            <div style="${FNT}font-size:15.5px;font-weight:300;line-height:1.72;color:${tc};opacity:.62;">${esc(st[2])}</div>
+            <div style="${FNT}font-size:19px;font-weight:700;letter-spacing:-.01em;color:${tc};margin-bottom:10px;">${esc(st[1])}</div>
+            <div style="${FNT}font-size:15.5px;font-weight:400;line-height:1.75;color:${tc};opacity:.62;">${esc(st[2])}</div>
           </div>
         </div>
       `).join('')}
@@ -608,7 +608,7 @@ function slide4(f,bg,ac,tc,tm,sep,label) {
 
     ${eyebrow(f.eyebrow,ac)}
 
-    <div style="${SER}font-size:96px;font-weight:700;line-height:.98;letter-spacing:-.024em;margin-bottom:64px;">
+    <div style="${SER}font-size:88px;font-weight:800;line-height:1.0;letter-spacing:-.04em;margin-bottom:64px;">
       <div style="color:${tc};">${esc(f.heading1)}</div>
       <div style="color:${tc};">${esc(f.heading2)}</div>
       <div style="color:${ac};">${esc(f.heading3)}</div>
@@ -620,7 +620,7 @@ function slide4(f,bg,ac,tc,tm,sep,label) {
       ${benefits.map(b=>`
         <div style="display:flex;align-items:center;gap:20px;">
           <div style="width:5px;height:5px;border-radius:50%;background:${ac};flex-shrink:0;"></div>
-          <div style="${FNT}font-size:18.5px;font-weight:500;color:${tc};line-height:1.55;">${esc(b)}</div>
+          <div style="${FNT}font-size:18px;font-weight:500;color:${tc};line-height:1.55;">${esc(b)}</div>
         </div>
       `).join('')}
     </div>
@@ -641,18 +641,18 @@ function slide5(f,bg,ac,tc,tm,sep,label) {
     <div style="${FNT}display:inline-block;align-self:flex-start;font-size:9px;font-weight:800;letter-spacing:.26em;text-transform:uppercase;background:${ac};color:${isDark(ac)?'#0f0f0e':'#f0ede6'};padding:7px 14px;margin-bottom:52px;">${esc(f.badge)}</div>
 
     <div>
-      <div style="${SER}font-size:100px;font-weight:700;line-height:.96;letter-spacing:-.03em;color:${ac};">${esc(f.stat)}</div>
+      <div style="${SER}font-size:92px;font-weight:800;line-height:.96;letter-spacing:-.04em;color:${ac};">${esc(f.stat)}</div>
       <div style="${FNT}font-size:12.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:${tc};opacity:.45;margin-top:8px;">${esc(f.stat_label)}</div>
     </div>
 
     ${hrule(sep,'36px')}
 
-    <div style="${SER}font-size:45px;font-weight:700;line-height:1.16;letter-spacing:-.01em;color:${tc};margin-bottom:36px;">${esc(f.headline)}</div>
+    <div style="${SER}font-size:42px;font-weight:700;line-height:1.2;letter-spacing:-.02em;color:${tc};margin-bottom:36px;">${esc(f.headline)}</div>
 
-    <div style="${FNT}font-size:16.5px;font-weight:300;line-height:1.82;color:${tc};opacity:.68;flex:1;">${esc(f.story)}</div>
+    <div style="${FNT}font-size:16.5px;font-weight:400;line-height:1.82;color:${tc};opacity:.68;flex:1;">${esc(f.story)}</div>
 
     <div style="border-top:.5px solid ${sep};padding-top:24px;margin-top:auto;">
-      <div style="${FNT}font-size:11px;font-weight:600;letter-spacing:.1em;color:${tc};opacity:.35;">${esc(f.attribution)}</div>
+      <div style="${FNT}font-size:11px;font-weight:500;letter-spacing:.06em;color:${tc};opacity:.35;">${esc(f.attribution)}</div>
     </div>
 
     ${pageLbl(label,tm)}
@@ -668,7 +668,7 @@ function slide6(f,bg,ac,tc,tm,sep,label) {
     ${eyebrow(f.eyebrow,ac)}
 
     <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
-      <div style="${SER}font-size:104px;font-weight:700;line-height:.97;letter-spacing:-.025em;">
+      <div style="${SER}font-size:96px;font-weight:800;line-height:.99;letter-spacing:-.04em;">
         <div style="color:${tc};">${esc(f.heading1)}</div>
         <div style="color:${tc};">${esc(f.heading2)}</div>
         <div style="color:${ac};">${esc(f.heading3)}</div>
@@ -677,11 +677,11 @@ function slide6(f,bg,ac,tc,tm,sep,label) {
 
     ${hrule(sep,'40px')}
 
-    <div style="${FNT}font-size:17px;font-weight:300;line-height:1.74;color:${tc};opacity:.72;max-width:640px;margin-bottom:40px;">${esc(f.cta_desc)}</div>
+    <div style="${FNT}font-size:17px;font-weight:400;line-height:1.78;color:${tc};opacity:.72;max-width:640px;margin-bottom:40px;">${esc(f.cta_desc)}</div>
 
     <div style="${FNT}display:inline-block;align-self:flex-start;background:${ac};color:${isDark(ac)?'#0f0f0e':'#1a1a18'};font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;padding:19px 48px;margin-bottom:32px;">${esc(f.cta_btn)}</div>
 
-    <div style="${FNT}font-size:14.5px;font-weight:500;color:${tc};opacity:.45;letter-spacing:.06em;">${esc(f.contact)}</div>
+    <div style="${FNT}font-size:14.5px;font-weight:500;color:${tc};opacity:.45;letter-spacing:.04em;">${esc(f.contact)}</div>
 
     <div style="margin-top:auto;border-top:.5px solid ${sep};padding-top:22px;">
       <div style="${FNT}font-size:9px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:${ac};opacity:.45;">${esc(f.tag)}</div>
